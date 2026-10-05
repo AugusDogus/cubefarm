@@ -218,6 +218,7 @@ dialog::backdrop { background: #fff9; }
 .completed-projects summary { cursor: pointer; margin-bottom: 10px; }
 .genetics-section { border-top: 1px solid #000; margin-top: 30px; padding-top: 30px; }
 .strategy-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; align-items: start; }
+.strategy-before-mergers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .strategy-grid > .section + .section { margin-top: 0; }
 .strategy-grid .purchase-top { flex-wrap: wrap; }
 .strategy-grid progress { margin: 3px 0 10px; }
@@ -250,7 +251,7 @@ input[type='range']::-moz-range-thumb { width: 10px; height: 18px; background: #
 .ending-page .pair { padding: 10px 0; }
 .ending-page > .hint { margin-top: 25px; }
 @media (max-width: 950px) { .project-grid, .strategy-grid, .branch-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; } .tabs { gap: 22px; overflow-x: auto; } }
-@media (max-width: 620px) { .project-grid, .strategy-grid, .branch-grid, .ending-choices { grid-template-columns: 1fr; gap: 25px; } .objective-strip { flex-wrap: wrap; gap: 10px; } .objective-strip > div { flex-basis: 100%; } .objective-strip > button { margin-left: auto; } .tabs { gap: 18px; justify-content: flex-start; } .resource-row { gap: 20px; } .price-control { flex-wrap: wrap; } .cohort-controls label { flex: 1; } }
+@media (max-width: 620px) { .project-grid, .strategy-grid, .strategy-before-mergers, .branch-grid, .ending-choices { grid-template-columns: 1fr; gap: 25px; } .objective-strip { flex-wrap: wrap; gap: 10px; } .objective-strip > div { flex-basis: 100%; } .objective-strip > button { margin-left: auto; } .tabs { gap: 18px; justify-content: flex-start; } .resource-row { gap: 20px; } .price-control { flex-wrap: wrap; } .cohort-controls label { flex: 1; } }
 @media (max-width: 620px) {
   .stats-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stats-bar small { display: block; white-space: normal; margin: 7px 0 0; line-height: 1.5; }

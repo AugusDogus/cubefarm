@@ -1,5 +1,6 @@
 import type { GameState } from './state';
-import { projects, projectReason, type ProjectId } from './projects';
+import { projects, projectReason, visibleProjects, nextLearningProject, type ProjectId } from './projects';
+import { projectLearningRemaining } from './learning';
 import { expectedOutput } from './balance';
 import { demand } from './economy';
 
@@ -21,8 +22,14 @@ export function objective(state: GameState): { title: string; detail: string; ta
   if (c.phase.id === 'ending') return { title: 'The work is finished', detail: 'Your ending is recorded. Reincorporate to carry five legacy credits into a new company.', target: null };
   const demandLimited = expectedOutput(state) > demand(state) || c.inventory > demand(state) * 20;
   const steps: readonly ProjectId[] = c.phase.id === 'office' ? ['time-study', 'procurement', ...(demandLimited ? ['brand' as const] : []), 'standards', 'charter'] : c.phase.id === 'enterprise' ? ['analytics', 'legal', 'centralization', 'mergers', 'regional'] : ['franchise', 'continental', 'coordination', 'infrastructure', 'sovereign'];
-  const target = steps.find(id => !c.projects.includes(id)) ?? null;
+  let target = steps.find(id => !c.projects.includes(id)) ?? null;
+  if (target && projectLearningRemaining(state, target) !== 0) {
+    // Prefer a useful available project over a later observation window.
+    target = visibleProjects(state).find(id => projectReason(state, id) === null)
+      ?? visibleProjects(state)[0] ?? nextLearningProject(state)?.id ?? target;
+  }
   if (!target) return { title: 'Prepare the next era', detail: 'Review the remaining corporate projects in Research.', target: null };
+  if (target === 'stewardship' || target === 'extraction') return { title: 'Choose a management path', detail: 'Compare Stewardship and Performance doctrine at the development desk. Either choice is permanent for this company.', target };
   const reason = projectReason(state, target);
   return { title: projects[target].name, detail: reason ?? 'Ready to authorize at the development desk.', target };
 }

@@ -5,6 +5,7 @@ import { projects, projectIds } from './projects';
 import { workspaceIds } from './discovery-feedback';
 import { StorySchema, initialStory } from './story';
 import { protocolIds } from './network';
+import { LearningSchema, learningAnchors } from './learning';
 
 const cultivarId = z.enum(['generalist', 'processor', 'specialist', 'executive']);
 const geneId = z.enum(['focus', 'endurance', 'precision', 'cognition', 'synthesis']);
@@ -60,6 +61,7 @@ function validateLegacy(state: z.infer<typeof BaseSchema>, ctx: z.RefinementCtx)
 }
 export const LegacySchema = BaseSchema.superRefine(validateLegacy);
 export const GameSchema = BaseSchema.extend({
+  learning: LearningSchema.default({ mode: 'legacy' }),
   discoveryRecord: z.object({ workspaces: z.array(z.enum(workspaceIds)).max(workspaceIds.length).refine(unique), projects: z.array(z.enum(projectIds)).max(projectIds.length).refine(unique), protocols: z.array(z.enum(protocolIds)).max(protocolIds.length).refine(unique).default([]) }).nullable().default(null),
   version: z.literal(3), employees: z.array(EmployeeSchema).max(256), corporation: CorporationSchema,
   genome: z.array(geneId).max(2).refine(unique),
@@ -69,6 +71,14 @@ export const GameSchema = BaseSchema.extend({
 }).superRefine((state, ctx) => {
   validateLegacy({ ...state, version: 1 }, ctx);
   const c = state.corporation;
+  if (state.learning.mode === 'staged') {
+    const anchors = state.learning.anchors;
+    for (const id of learningAnchors) {
+      const earned = id === 'first-hire' ? state.nextId > 1 : c.projects.includes(id);
+      const anchor = anchors.find(anchor => anchor.id === id);
+      if (earned !== Boolean(anchor) || anchor && anchor.at > state.elapsed) ctx.addIssue({ code: 'custom', message: `The ${id} introduction record is inconsistent with company history.` });
+    }
+  }
   const tender = c.tender;
   if ((tender.sequence > 0 || tender.stage.status !== 'idle' || tender.lastReceipt !== null) && !c.projects.includes('charter')) ctx.addIssue({ code: 'custom', message: 'Competitive tenders require the Enterprise charter.' });
   const tenderTier = tender.stage.status === 'brief' || tender.stage.status === 'resolving' ? tender.stage.brief.tier : null;
@@ -96,7 +106,7 @@ export type GameState = z.infer<typeof GameSchema>;
 
 export function initialState(now = Date.now()): GameState {
   return {
-    version: 3, discoveryRecord: { workspaces: ['Office'], projects: [], protocols: [] }, corporation: initialCorporation(), cash: 0, revenue: 0, paperwork: 0, manualPapers: 0, wages: 0, elapsed: 0, nextId: 1,
+    version: 3, learning: { mode: 'staged', anchors: [] }, discoveryRecord: { workspaces: ['Office'], projects: [], protocols: [] }, corporation: initialCorporation(), cash: 0, revenue: 0, paperwork: 0, manualPapers: 0, wages: 0, elapsed: 0, nextId: 1,
     employees: [], genome: [], story: initialStory(), manualCooldown: 0,
     automation: { memos: false, contracts: 'off', allocation: 'half', reserve: 100 },
     unlockedCultivars: ['generalist'], genes: [], facilities: [],

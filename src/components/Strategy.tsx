@@ -40,11 +40,12 @@ function ContractReceipt({ state }: { state: GameState }) {
 }
 export function Acquisitions({ state, dispatch }: Props) {
   const c = state.corporation;
+  if (!c.projects.includes('mergers') && c.acquired.length === 0) return null;
   return <Section title="Mergers & markets" aside={<span className="muted">{c.acquired.length} / 6 acquired</span>}><p className="section-intro">Every acquired market expands retail reach. Their staff arrive as unmodified generalists, and remain unmodified after your research.</p>{!c.projects.includes('mergers') && <p className="hint">Research Merger approval to acquire competitors.</p>}{rivalIds.map(id => {
     const r = rivals[id], owned = c.acquired.includes(id), cost = acquisitionCost(state, id), influence = 10 + c.acquired.length * 5;
     return <Purchase key={id} name={r.name} description={`${r.employees} legacy employees. Reported revenue ${dollars(rivalRevenue(state, id))}.`} label={owned ? 'Integrated' : `Acquire · ${dollars(cost)} / ${influence} influence`} disabled={owned || !c.projects.includes('mergers') || state.cash < cost || c.influence < influence} onClick={() => dispatch({ type: 'acquire', id })} />;
   })}</Section>;
 }
 export function Strategy({ state, dispatch }: Props) {
-  return <div className="strategy-grid"><div><CompanyHealth state={state} /><Section title="Operating policy"><p className="section-intro">Policies can change at any time. Management paths are permanent for this company.</p>{policies.map(policy => <Purchase key={policy} name={policy[0]?.toUpperCase() + policy.slice(1)} description={policyDescriptions[policy]} label={state.corporation.policy === policy ? 'Current policy' : 'Apply policy'} disabled={state.corporation.policy === policy} onClick={() => dispatch({ type: 'policy', policy })} />)}</Section><BoardDecision state={state} dispatch={dispatch} /></div><ContractDesk state={state} dispatch={dispatch} /><Acquisitions state={state} dispatch={dispatch} /></div>;
+  return <div className={`strategy-grid ${state.corporation.projects.includes('mergers') ? '' : 'strategy-before-mergers'}`}><div><CompanyHealth state={state} /><Section title="Operating policy"><p className="section-intro">Policies can change at any time. Management paths are permanent for this company.</p>{policies.map(policy => <Purchase key={policy} name={policy[0]?.toUpperCase() + policy.slice(1)} description={policyDescriptions[policy]} label={state.corporation.policy === policy ? 'Current policy' : 'Apply policy'} disabled={state.corporation.policy === policy} onClick={() => dispatch({ type: 'policy', policy })} />)}</Section><BoardDecision state={state} dispatch={dispatch} /></div><ContractDesk state={state} dispatch={dispatch} /><Acquisitions state={state} dispatch={dispatch} /></div>;
 }

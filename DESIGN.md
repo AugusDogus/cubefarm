@@ -12,6 +12,10 @@ the work. The final question is who gets to leave.
 - Each control appears after its problem becomes relevant. Research, office
   incentives, cultivars and genes are revealed separately. At most three main
   workspaces; Network replaces Operations and puts prior systems in Archive.
+- New companies stagger first introductions with short operating-time windows
+  after hiring and key projects. Pause freezes these windows; offline progress
+  advances them. Existing saves retain historical access. Supply and demand
+  recovery stay available. This creates observation room, not proof of learning.
 - Office purchases have measurable marginal output and payback. Early equipment
   competes with hiring; incentives become attractive as the workforce grows.
   Revenue constraints are distinguished from production improvements.

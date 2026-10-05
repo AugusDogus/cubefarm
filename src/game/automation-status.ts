@@ -5,6 +5,7 @@ import { branchProduction, payroll, maintenance } from './expansion';
 import { employeeRate } from './workforce';
 import { wageMultiplier } from './conditions';
 import { expectedOutput, memoRetailReturn } from './balance';
+import { memoVisible } from './discovery';
 
 export type AutomationStatus =
   | { status: 'off'; message: string }
@@ -58,6 +59,7 @@ export function memoAutomationStatus(state: GameState): AutomationStatus {
   if (!state.automation.memos) return { status: 'off', message: 'Automatic memos are off.' };
   const unavailable = availability(state);
   if (unavailable) return unavailable;
+  if (!memoVisible(state)) return blocked('The office is observing the workflow before introducing memos.');
   if (state.memo.status !== 'ready') return blocked(state.memo.status === 'active' ? 'The current memo is still in effect.' : 'Waiting for the memo cooldown.');
   const c = state.corporation, contract = c.contract;
   const supportsOrder = contract.status === 'active' && contracts[contract.id].forms - contract.delivered > expectedOutput(state) * (contract.allocation === 'all' ? 1 : 0.5);

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Action } from '../game/engine';
 import type { GameState } from '../game/state';
+import { learningRemaining } from '../game/learning';
 import { approachIds, approaches, clients, tenderAvailable, tenderNextProcedure, tenderQuote, tenderResearchBudget, tenderStakeCap, tenderStakeLimit, TENDER_RESOLUTION_SECONDS, type ApproachId, type TenderBrief, type TenderQuote, type TenderReceipt, type TenderReward } from '../game/tender';
 import { dollars, Pair, percent, Section } from './ui';
 
@@ -17,7 +18,12 @@ function rewardText(reward: TenderReward, cost: TenderQuote['researchCost'] = { 
 const researchText = (cost: TenderQuote['researchCost']) => cost.kind === 'none' ? 'None' : `${amount(cost.amount)} ${cost.kind}`;
 
 export function Tender({ state, dispatch }: Props) {
-  if (!tenderAvailable(state)) return null;
+  if (!tenderAvailable(state)) {
+    const remaining = learningRemaining(state, 'charter', 90);
+    return state.corporation.phase.id === 'enterprise' && remaining !== null && remaining > 0
+      ? <p className="hint">Competitive tenders open in {remaining} operating seconds. {state.paused ? 'Resume operations to continue.' : 'Establish the contract desk and try an operating policy first.'}</p>
+      : null;
+  }
   const tender = state.corporation.tender, stage = tender.stage;
   const networkReward = stage.status === 'brief' || stage.status === 'resolving' ? stage.brief.tier === 'network' : state.corporation.phase.id === 'network';
   return <Section title="Competitive tenders" aside={<span className="muted">Optional</span>}>

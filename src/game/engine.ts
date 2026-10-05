@@ -8,7 +8,8 @@ import { estimatedIncome, tickEconomy, supplyCost, type DepartmentOutput } from 
 import { branchProduction, rivalRevenue } from './expansion';
 import { rivalIds } from './corporation';
 import { record as log } from './log';
-import { discovery, facilityVisible, upgradeVisible } from './discovery';
+import { discovery, cultivarVisible, geneVisible, memoVisible, facilityVisible, upgradeVisible } from './discovery';
+import { recordLearning } from './learning';
 import { geneEffects } from './genome';
 import { pendingLetter, letters, type LetterId, type StoryReply } from './story';
 import { tickAutomation } from './automation';
@@ -108,7 +109,7 @@ export function act(state: GameState, action: Action, random: () => number = Mat
         const id = state.nextId + i;
         return { id, name: id === 1 ? 'Robin Park' : `${firstNames[(id - 1) % firstNames.length] ?? 'Taylor'} ${surnames[Math.floor(random() * surnames.length)] ?? 'Park'}`, cultivar: action.cultivar, genes: [...state.genome], aptitude: 0.85 + random() * 0.3, hiredCost: Math.ceil(cultivars[action.cultivar].price * 1.025 ** (state.employees.length + i)), produced: 0, activity: 'working', role: 'operations', remaining: 5 + random() * 5 };
       });
-      return success({ ...state, cash: state.cash - quote.cost, employees: [...state.employees, ...employees], nextId: state.nextId + count }, `${count === 1 ? employees[0]?.name : `${count} employees`} hired. ${cultivars[action.cultivar].name}. Traits fixed at hire.`);
+      return success(recordLearning({ ...state, cash: state.cash - quote.cost, employees: [...state.employees, ...employees], nextId: state.nextId + count }, 'first-hire'), `${count === 1 ? employees[0]?.name : `${count} employees`} hired. ${cultivars[action.cultivar].name}. Traits fixed at hire.`);
     }
     case 'release': {
       const employee = state.employees.find(e => e.id === action.id);
@@ -140,6 +141,7 @@ export function act(state: GameState, action: Action, random: () => number = Mat
       const cultivar = cultivars[action.id];
       if (state.unlockedCultivars.includes(action.id)) return fail('This cultivar is already available.');
       if (state.revenue < cultivar.unlock) return fail(`Earn $${cultivar.unlock} in lifetime revenue to research this cultivar.`);
+      if (!cultivarVisible(state, action.id)) return fail('Recruitment is observing the current workforce. New profiles appear as operations continue.');
       if (state.cash < cultivar.research) return fail(`Research requires $${cultivar.research}. Existing employees remain unchanged.`);
       return success({ ...state, cash: state.cash - cultivar.research, unlockedCultivars: [...state.unlockedCultivars, action.id] }, `${cultivar.name} recruitment profile available. Existing employees retain their traits.`);
     }
@@ -149,6 +151,7 @@ export function act(state: GameState, action: Action, random: () => number = Mat
       if (state.genes.includes(action.id)) return fail('This gene has already been researched.');
       if (state.revenue < gene.unlock) return fail(`Earn $${gene.unlock} in lifetime revenue to unlock this gene.`);
       if (!gene.requires.every(id => state.genes.includes(id))) return fail('Research the prerequisite genes first.');
+      if (!geneVisible(state, action.id)) return fail('The lab is observing the first inherited traits. Advanced research appears as operations continue.');
       if (state.cash < gene.cost) return fail(`Gene research requires $${gene.cost}. Existing employees remain unchanged.`);
       return success({ ...state, cash: state.cash - gene.cost, genes: [...state.genes, action.id] }, `${gene.name} researched. Applies to future hires only.`);
     }
@@ -161,7 +164,7 @@ export function act(state: GameState, action: Action, random: () => number = Mat
       return success({ ...state, cash: state.cash - facility.cost, facilities: [...state.facilities, action.id] }, `${facility.name} installed. Benefits apply to the entire workforce.`);
     }
     case 'memo': {
-      if (state.revenue < 400) return fail('The office needs a larger workflow before circulating memos.');
+      if (!memoVisible(state)) return fail('The office needs more operating experience before circulating memos.');
       if (state.memo.status !== 'ready') return fail('The previous memo is still circulating. Wait for the cooldown to finish.');
       if (state.cash < MEMO_COST) return fail('Circulating a memo requires $20. Process more paperwork first.');
       return success({ ...state, cash: state.cash - MEMO_COST, memo: { status: 'active', remaining: 90 } }, `Memo circulated: consolidate redundant workflows. +${Math.round(memoBoost(state) * 100)}% productivity for 90 seconds.`);

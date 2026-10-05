@@ -1,4 +1,5 @@
 import type { GameState } from './state';
+import { projectLearningRemaining } from './learning';
 
 export const projectIds = ['time-study', 'procurement', 'brand', 'standards', 'charter', 'logistics', 'analytics', 'cultivation', 'legal', 'stewardship', 'extraction', 'centralization', 'mergers', 'regional', 'franchise', 'continental', 'coordination', 'infrastructure', 'sovereign'] as const;
 export type ProjectId = typeof projectIds[number];
@@ -33,6 +34,8 @@ export function projectReason(state: GameState, id: ProjectId): string | null {
   if (phaseOrder[c.phase.id] < phaseOrder[p.phase]) return `Requires the ${p.phase} era`;
   const missing = p.requires.find(required => !c.projects.includes(required));
   if (missing) return `Requires ${projects[missing].name}`;
+  const remaining = projectLearningRemaining(state, id);
+  if (remaining !== 0) return remaining === null ? 'Study the current workflow first' : `Observe the current workflow for ${remaining} more operating seconds`;
   if (id === 'charter' && state.story.promise === 'undecided') return 'Reply to Robin’s letter before signing';
   if (id === 'cultivation' && state.story.cultivation === 'undecided') return 'Reply to Imani before opening the lab';
   if (id === 'charter' && state.employees.length < 6) return 'Requires six headquarters employees';
@@ -50,7 +53,22 @@ export function visibleProjects(state: GameState) {
   return projectIds.filter(id => !state.corporation.projects.includes(id)
     && phaseOrder[projects[id].phase] <= phaseOrder[state.corporation.phase.id]
     && projects[id].requires.every(p => state.corporation.projects.includes(p))
+    && projectLearningRemaining(state, id) === 0
     && state.revenue >= projects[id].revenue * 0.6
     && !(id === 'stewardship' && state.corporation.projects.includes('extraction'))
     && !(id === 'extraction' && state.corporation.projects.includes('stewardship')));
+}
+
+/** Preview one upcoming introduction, not a second list of locked projects. */
+export function nextLearningProject(state: GameState) {
+  return projectIds.flatMap(id => {
+    const remaining = projectLearningRemaining(state, id);
+    return remaining !== null && remaining > 0 && !state.corporation.projects.includes(id)
+      && phaseOrder[projects[id].phase] <= phaseOrder[state.corporation.phase.id]
+      && projects[id].requires.every(required => state.corporation.projects.includes(required))
+      && state.revenue >= projects[id].revenue * 0.6
+      && !(id === 'stewardship' && state.corporation.projects.includes('extraction'))
+      && !(id === 'extraction' && state.corporation.projects.includes('stewardship'))
+      ? [{ id, remaining }] : [];
+  }).sort((a, b) => a.remaining - b.remaining)[0] ?? null;
 }

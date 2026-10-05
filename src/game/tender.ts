@@ -2,15 +2,21 @@ import type { GameState } from './state';
 import type { Outcome } from './engine';
 import { operatingReserve } from './automation';
 import { record } from './log';
+import { learningRemaining } from './learning';
 import { protocolIds, protocols } from './network';
 import { TENDER_RESOLUTION_SECONDS, TENDER_COOLDOWN_SECONDS, approachIds, clientIds, clients, approaches, tenderStakeCap, tenderResearchCost, researchCost, researchReward, quoteFor, equalReward, zeroReward, type Tender, type TenderAction, type TenderBrief, type ApproachId, type TenderQuote, type TenderReward, type TenderReceipt } from './tender-state';
 export * from './tender-state';
 
 export function tenderAvailable(state: GameState): boolean {
-  return state.corporation.projects.includes('charter') && state.corporation.phase.id !== 'office' && state.corporation.phase.id !== 'ending';
+  return state.corporation.projects.includes('charter') && state.corporation.phase.id !== 'office' && state.corporation.phase.id !== 'ending'
+    && (state.corporation.tender.sequence > 0 || learningRemaining(state, 'charter', 90) === 0);
 }
 export function tenderBlocker(state: GameState): string | null {
-  return tenderAvailable(state) ? null : 'Competitive tenders open after the Enterprise charter and close when the company story ends.';
+  if (tenderAvailable(state)) return null;
+  const remaining = learningRemaining(state, 'charter', 90);
+  return state.corporation.phase.id === 'enterprise' && remaining !== null && remaining > 0
+    ? `The contract desk is establishing operations. Competitive tenders open in ${remaining} operating seconds.`
+    : 'Competitive tenders open after the Enterprise charter and close when the company story ends.';
 }
 export function tenderStakeLimit(state: GameState, brief: TenderBrief): number {
   const budget = tenderResearchBudget(state, brief);

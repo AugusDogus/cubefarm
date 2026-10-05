@@ -16,6 +16,7 @@ import { normalizePrice } from './price';
 import { inspectDiscoveries, type WorkspaceId } from './discovery-feedback';
 import { settleContractReceipt } from './contracts';
 import { settlePendingTender } from './tender';
+import { learningAnchors, recordLearning } from './learning';
 
 export type StrategyAction =
   | { type: 'inspect-discoveries'; workspaces: WorkspaceId[]; projects: ProjectId[]; protocols?: ProtocolId[] }
@@ -97,7 +98,10 @@ export function actStrategy(state: GameState, action: StrategyAction): Outcome {
       if (action.id === 'charter') phase = { id: 'enterprise' };
       if (action.id === 'regional') phase = { id: 'conglomerate' };
       if (action.id === 'sovereign') phase = { id: 'network', network: initialNetwork() };
-      return success({ ...prepared, cash: prepared.cash - p.cash, corporation: { ...company, projects: [...company.projects, action.id], insights: company.insights - p.insights, influence: company.influence - p.influence, autoBuy: action.id === 'procurement' ? true : company.autoBuy, phase, crisis: action.id === 'sovereign' ? { status: 'calm', remaining: 240 } : company.crisis } }, `${p.name} completed.${phase.id !== c.phase.id ? ` The ${phase.id} era begins.` : ''}`);
+      let next: GameState = { ...prepared, cash: prepared.cash - p.cash, corporation: { ...company, projects: [...company.projects, action.id], insights: company.insights - p.insights, influence: company.influence - p.influence, autoBuy: action.id === 'procurement' ? true : company.autoBuy, phase, crisis: action.id === 'sovereign' ? { status: 'calm', remaining: 240 } : company.crisis } };
+      const anchor = learningAnchors.find(id => id === action.id);
+      if (anchor) next = recordLearning(next, anchor);
+      return success(next, `${p.name} completed.${phase.id !== c.phase.id ? ` The ${phase.id} era begins.` : ''}`);
     }
     case 'staff': {
       if (!c.projects.includes('time-study')) return fail('Study the workflow before establishing departments.');

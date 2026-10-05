@@ -10,6 +10,7 @@ import { discovery } from '../discovery';
 import { protocolIds, WORLD_WORKFLOWS, initialNetwork } from '../network';
 import { GameSchema, initialState, type GameState } from '../state';
 import { networkFixture } from './fixtures';
+import { recordIntroductions, type Introduction } from './introductions';
 
 /** A reproducible legal player. Decision intervals perturb the informed policy; they do not model human play. */
 export function playthrough(path: 'stewardship' | 'extraction', seed = 7, visit?: (state: GameState) => void, networkStyle: 'staged' | 'growth' | 'survey' = 'staged', clearAt = 5000, decisionIntervalSeconds = 0) {
@@ -17,6 +18,7 @@ export function playthrough(path: 'stewardship' | 'extraction', seed = 7, visit?
   let state = initialState(0), clicks = 0, interactions = 0;
   const actions: { type: string; action: Action; phase: string; seconds: number }[] = [];
   const milestones: { id: string; seconds: number }[] = [];
+  const introductions: Introduction[] = [], seenIntroductions = new Set<string>();
   let networkStarted = false, clearance = false;
   let nextPriceReview = 0;
   let openingComplete = false, nextDecisionAt = 0;
@@ -33,6 +35,7 @@ export function playthrough(path: 'stewardship' | 'extraction', seed = 7, visit?
       interactions += action.type === 'read-letter' && result.state.corporation.phase.id === 'network' ? 2 : action.type === 'staff' ? 4 : action.type === 'price' ? 2 : action.type === 'genome' ? new Set([...state.genome, ...action.genes]).size - state.genome.filter(g => action.genes.includes(g)).length : action.type === 'cohort' ? 3 : action.type === 'hire' && action.cultivar !== 'generalist' ? 2 : action.type === 'automation' ? 2 : 1;
       const previous = state.corporation.phase.id;
       state = result.state; clicks++; actions.push({ type: action.type, action, phase: state.corporation.phase.id, seconds: state.elapsed });
+      recordIntroductions(state, introductions, seenIntroductions, action.type);
       if (previous !== state.corporation.phase.id) { transitions.push({ phase: state.corporation.phase.id, seconds: state.elapsed, revenue: state.revenue }); visit?.(state); }
       return true;
     }
@@ -41,6 +44,7 @@ export function playthrough(path: 'stewardship' | 'extraction', seed = 7, visit?
   for (let form = 0; form < 28; form++) {
     if (!attempt({ type: 'process' })) throw new Error('Manual opening failed.');
     state = advance(state, 0.5, random);
+    recordIntroductions(state, introductions, seenIntroductions, 'advance');
   }
   if (!attempt({ type: 'hire', cultivar: 'generalist' })) throw new Error('First automation was not earned.');
   milestones.push({ id: 'first-hire', seconds: state.elapsed });
@@ -48,7 +52,7 @@ export function playthrough(path: 'stewardship' | 'extraction', seed = 7, visit?
   for (let tick = 0; tick < 3600; tick++) {
     const c = state.corporation;
     if (c.phase.id === 'network' && c.phase.network.completed >= WORLD_WORKFLOWS) {
-      return { state, transitions, clicks, interactions, actions, milestones };
+      return { state, transitions, clicks, interactions, actions, milestones, introductions };
     }
     const letter = pendingLetter(state);
     if (letter === 'promise') attempt({ type: 'reply', letter, choice: path === 'stewardship' ? 'voice' : 'quota' });
@@ -127,6 +131,7 @@ export function playthrough(path: 'stewardship' | 'extraction', seed = 7, visit?
       if (networkStyle === 'staged' && n.undiscovered === 0 && n.allocation.discover > 0) attempt({ type: 'network-plan', plan: 'clear' });
     }
     state = advance(state, 10, random);
+    recordIntroductions(state, introductions, seenIntroductions, 'advance');
     if (tick % 30 === 0) {
       const valid = GameSchema.safeParse(state);
       if (!valid.success) throw new Error(`Invalid state at ${state.elapsed}s: ${valid.error.message}`);

@@ -6,9 +6,9 @@ export function perform(state: GameState, action: Action): GameState {
   if (!result.ok) throw new Error(result.message);
   return result.state;
 }
-/** Nonempty fixtures for accounting and migration tests, not progression tests. */
+/** Historical accounting snapshots deliberately bypass fresh-company introduction windows. */
 export function officeFixture(): GameState {
-  return perform({ ...initialState(0), cash: 1000, revenue: 150 }, { type: 'hire', cultivar: 'generalist', count: 3 });
+  return perform({ ...initialState(0), learning: { mode: 'legacy' }, cash: 1000, revenue: 150 }, { type: 'hire', cultivar: 'generalist', count: 3 });
 }
 export function enterpriseFixture(): GameState {
   let s = { ...officeFixture(), cash: 100000, revenue: 100000 };

@@ -4,7 +4,7 @@ import { capacity, hireCost, hireQuote, memoBoost, MEMO_COST, upgradeCost, upgra
 import { demand, supplyCost } from '../game/economy';
 import { totalEmployees } from '../game/expansion';
 import { SupplyAutomation, DemandGrowth } from './OfficeGrowth';
-import { discovery, upgradeVisible } from '../game/discovery';
+import { discovery, memoVisible, upgradeVisible } from '../game/discovery';
 import { expectedOutput, purchaseHint, memoRetailReturn } from '../game/balance';
 import { normalizePrice } from '../game/price';
 import type { GameState } from '../game/state';
@@ -63,7 +63,7 @@ export function UpgradeList({ state, dispatch, ids }: Props & { ids: readonly Up
   })}</Section>;
 }
 export function Memo({ state, dispatch }: Props) {
-  if (state.revenue < 400) return null;
+  if (!memoVisible(state)) return null;
   const memo = state.memo;
   return <Section title="Internal memo"><p className="section-intro">Consolidate redundant workflows. +{Math.round(memoBoost(state) * 100)}% output for 90 seconds, followed by 90 seconds of quiet.</p>
     {memo.status === 'ready' && memoRetailReturn(state) <= 0 && <p className="hint">Retail sales cannot cover this memo at current demand. It may support an order, research, influence, or pressure relief.</p>}

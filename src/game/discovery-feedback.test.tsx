@@ -42,7 +42,7 @@ test('old saves baseline existing capabilities once and still announce later dis
   expect(unseenDiscoveries(state, null)).toEqual({ workspaces: [], projects: [], protocols: [] });
   const baselined = inspectDiscoveries(state, null, { workspaces: [], projects: [] });
   expect(baselined).toEqual({ workspaces: ['Office', 'Development'], projects: ['time-study'], protocols: [] });
-  const reviewed = { ...state, revenue: 300, corporation: { ...state.corporation, projects: ['time-study'] as const } };
+  const reviewed = { ...state, learning: undefined, revenue: 300, corporation: { ...state.corporation, projects: ['time-study'] as const } };
   const parsed = parseGame(reviewed);
   if (!parsed.success) throw new Error('Expected a valid time-study fixture.');
   expect(unseenDiscoveries(parsed.data, baselined).projects).toEqual(['procurement', 'brand', 'standards']);
@@ -71,7 +71,7 @@ test('project cards show unread state without changing affordability and complet
   expect(markup).toContain('disabled=""');
   expect(markup).toContain('tabindex="0" role="group" aria-label="Time study, new project"');
   expect(markup).not.toContain('Sovereign workflow');
-  const parsed = parseGame({ ...state, corporation: { ...state.corporation, projects: ['time-study'] } });
+  const parsed = parseGame({ ...state, learning: undefined, corporation: { ...state.corporation, projects: ['time-study'] } });
   if (!parsed.success) throw new Error('Expected a valid completed project fixture.');
   const completed = renderToStaticMarkup(<Projects state={parsed.data} dispatch={() => {}} />);
   expect(completed).toContain('Completed projects');
